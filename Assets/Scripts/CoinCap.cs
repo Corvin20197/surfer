@@ -3,14 +3,17 @@ using UnityEngine;
 public class Coin : MonoBehaviour
 {
     public float rotationSpeed = 100f;
-    private Transform playerTransform;
+    private static Transform playerTransform; // Ссылка статик, чтобы искать игрока один раз для всех монет
 
     void Start()
     {
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
+        if (playerTransform == null)
         {
-            playerTransform = player.transform;
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                playerTransform = player.transform;
+            }
         }
     }
 
@@ -19,7 +22,7 @@ public class Coin : MonoBehaviour
         // Вращаем монетку
         transform.Rotate(Vector3.up * rotationSpeed * Time.deltaTime, Space.World);
 
-        // Если игрок уехал вперед больше чем на 20 метров от монетки, удаляем её, чтобы не засорять память
+        // Автоудаление позади игрока (используем кэшированную позицию)
         if (playerTransform != null)
         {
             if (transform.position.z < playerTransform.position.z - 20f)
@@ -33,7 +36,10 @@ public class Coin : MonoBehaviour
     {
         if (other.CompareTag("Player") || other.GetComponent<PlayerController>() != null)
         {
-            Debug.Log("Монетка собрана!");
+            if (ScoreManager.Instance != null)
+            {
+                ScoreManager.Instance.AddCoin();
+            }
             Destroy(gameObject);
         }
     }

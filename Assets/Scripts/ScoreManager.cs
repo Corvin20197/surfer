@@ -1,58 +1,55 @@
 using UnityEngine;
-using TMPro;
+using TMPro; // Убедись, что подключен TextMeshPro (если используешь его)
 
 public class ScoreManager : MonoBehaviour
 {
     public static ScoreManager Instance;
 
     [Header("UI References")]
-    public TextMeshProUGUI scoreText;
+    public TextMeshProUGUI scoreText;   // Текст очков
+    public TextMeshProUGUI coinText;    // Текст монет (перетащи сюда свой CoinText)
 
-    [Header("Score & Speed Settings")]
-    public float scoreMultiplier = 10f;
-    private float currentScore = 0f;
-    private bool isGameActive = true;
+    [Header("Game Stats")]
+    private float score = 0f;
+    private int coinCount = 0;
 
-    [Header("Speed Progression")]
-    public float baseSpeed = 10f;       // Начальная скорость бега
-    public float maxSpeed = 25f;        // Максимальная скорость
-    public float speedIncreaseRate = 0.05f; // Как быстро растет скорость со временем
+    [Header("Speed Settings")]
+    public float baseSpeed = 10f;
+    public float maxSpeed = 25f;
+    public float accelerationRate = 0.2f; // Скорость роста сложности
 
     void Awake()
     {
-        if (Instance == null)
-            Instance = this;
-        else
-            Destroy(gameObject);
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
     }
 
     void Update()
     {
-        if (!isGameActive) return;
-
-        currentScore += Time.deltaTime * scoreMultiplier;
+        // Увеличиваем очки за пройденное расстояние
+        score += GetCurrentSpeed() * Time.deltaTime;
 
         if (scoreText != null)
         {
-            scoreText.text = "Очки: " + Mathf.FloorToInt(currentScore).ToString();
+            scoreText.text = "Очки: " + Mathf.FloorToInt(score);
         }
     }
 
-    // Метод, который говорит игроку, с какой скоростью сейчас нужно бежать
+    // Метод для получения текущей динамической скорости (используется в PlayerController)
     public float GetCurrentSpeed()
     {
-        // Скорость плавно растет на основе набранных очков, но не превышает maxSpeed
-        float calculatedSpeed = baseSpeed + (currentScore * speedIncreaseRate);
-        return Mathf.Min(calculatedSpeed, maxSpeed);
+        // Скорость плавно растет со временем
+        float current = baseSpeed + (score * 0.01f * accelerationRate);
+        return Mathf.Min(current, maxSpeed);
     }
 
-    public void StopScore()
+    // Метод для добавления монетки (вызывается из скрипта Coin.cs)
+    public void AddCoin()
     {
-        isGameActive = false;
-    }
-
-    public int GetFinalScore()
-    {
-        return Mathf.FloorToInt(currentScore);
+        coinCount++;
+        if (coinText != null)
+        {
+            coinText.text = "Монеты: " + coinCount;
+        }
     }
 }

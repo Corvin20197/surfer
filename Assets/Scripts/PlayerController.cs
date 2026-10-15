@@ -16,12 +16,12 @@ public class PlayerController : MonoBehaviour
 
     [Header("Slide Settings")]
     private bool isSliding = false;
-    public float slideDuration = 0.5f; // Уменьшили длительность подката (было 0.7)
+    public float slideDuration = 0.5f; // Длительность подката
     private float normalHeight;
     public float slideHeight = 0.5f;   // Высота коллайдера при подкате
 
     private Vector3 normalScale;
-    public float slideScaleY = 0.4f;   // Во сколько раз сплющивается персонаж визуально
+    public float slideScaleY = 0.4f;   // Сплющивание персонажа визуально
 
     void Start()
     {
@@ -60,7 +60,7 @@ public class PlayerController : MonoBehaviour
         float newX = Mathf.Lerp(currentX, targetX, Time.deltaTime * laneChangeSpeed);
 
         // 2. Получаем текущую динамическую скорость бега из ScoreManager
-        float currentForwardSpeed = 10f; // Дефолтное значение на случай, если GameManager еще не создан
+        float currentForwardSpeed = 10f;
         if (ScoreManager.Instance != null)
         {
             currentForwardSpeed = ScoreManager.Instance.GetCurrentSpeed();
@@ -89,10 +89,10 @@ public class PlayerController : MonoBehaviour
             moveDirection.y -= gravity * Time.deltaTime;
         }
 
-        // Вычисляем смещение по X за этот кадр (разницу между новым плавной позицией и текущей)
+        // Вычисляем смещение по X за этот кадр
         float xMoveDelta = newX - currentX;
 
-        // Собираем итоговый вектор движения (X — смещение по линиям, Y — вертикаль/прыжок, Z — прогрессивная скорость вперед)
+        // Собираем итоговый вектор движения
         Vector3 finalMove = new Vector3(xMoveDelta / Time.deltaTime, moveDirection.y, moveZ);
 
         controller.Move(finalMove * Time.deltaTime);
@@ -118,5 +118,23 @@ public class PlayerController : MonoBehaviour
         transform.localScale = normalScale;
 
         isSliding = false;
+    }
+
+    // 4. Детект столкновения с препятствиями с защитой от ложных срабатываний при спавне/земле
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        // Игнорируем дорогу и монетки
+        if (hit.gameObject.CompareTag("Road") || hit.gameObject.CompareTag("Coin"))
+            return;
+
+        // Игнорируем касания земли снизу (приземление или старт игры)
+        if (hit.normal.y > 0.5f)
+            return;
+
+        // Если врезались в препятствие спереди или сбоку — проигрыш
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.GameOver();
+        }
     }
 }
