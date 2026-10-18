@@ -4,6 +4,13 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     private CharacterController controller;
+
+    private Animator animator;
+    private Vector3 normalCenter;
+
+    private static readonly int JumpHash = Animator.StringToHash("Jump");
+    private static readonly int SlideHash = Animator.StringToHash("Slide");
+
     private Vector3 moveDirection;
 
     [Header("Movement Settings")]
@@ -32,6 +39,10 @@ public class PlayerController : MonoBehaviour
         }
 
         normalHeight = controller.height;
+        normalCenter = controller.center;
+
+        // Ищем Animator на модели или её дочерних объектах
+        animator = GetComponentInChildren<Animator>();
         normalScale = transform.localScale;
     }
 
@@ -76,6 +87,11 @@ public class PlayerController : MonoBehaviour
             if ((Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) && !isSliding)
             {
                 moveDirection.y = jumpForce;
+                if (animator != null)
+                {
+                    animator.ResetTrigger(SlideHash);
+                    animator.SetTrigger(JumpHash);
+                }
             }
 
             // Подкат (S или Стрелка вниз)
@@ -103,19 +119,26 @@ public class PlayerController : MonoBehaviour
     {
         isSliding = true;
 
-        // Уменьшаем коллайдер
+        // Уменьшаем коллайдер, сохраняя его нижнюю точку
         controller.height = slideHeight;
-        controller.center = new Vector3(0, -0.25f, 0);
+        controller.center = new Vector3(
+            normalCenter.x,
+            normalCenter.y - (normalHeight - slideHeight) / 2f,
+            normalCenter.z
+        );
 
-        // Визуально сплющиваем персонажа
-        transform.localScale = new Vector3(normalScale.x, normalScale.y * slideScaleY, normalScale.z);
+        // Запускаем визуальную анимацию подката
+        if (animator != null)
+        {
+            animator.ResetTrigger(JumpHash);
+            animator.SetTrigger(SlideHash);
+        }
 
         yield return new WaitForSeconds(slideDuration);
 
-        // Возвращаем коллайдер и масштаб в норму
+        // Восстанавливаем коллайдер
         controller.height = normalHeight;
-        controller.center = Vector3.zero;
-        transform.localScale = normalScale;
+        controller.center = normalCenter;
 
         isSliding = false;
     }
